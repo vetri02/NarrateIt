@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3B28E98A2C8C20C3006C3D64 /* ElevenLabsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B28E9892C8C20C3006C3D64 /* ElevenLabsService.swift */; };
 		3BACE9D12C8C1845004518F6 /* NarrateItApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BACE9D02C8C1845004518F6 /* NarrateItApp.swift */; };
 		3BACE9D32C8C1845004518F6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BACE9D22C8C1845004518F6 /* ContentView.swift */; };
 		3BACE9D52C8C1846004518F6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3BACE9D42C8C1846004518F6 /* Assets.xcassets */; };
@@ -14,6 +15,8 @@
 		3BACE9E32C8C1846004518F6 /* NarrateItTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BACE9E22C8C1846004518F6 /* NarrateItTests.swift */; };
 		3BACE9ED2C8C1846004518F6 /* NarrateItUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BACE9EC2C8C1846004518F6 /* NarrateItUITests.swift */; };
 		3BACE9EF2C8C1846004518F6 /* NarrateItUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BACE9EE2C8C1846004518F6 /* NarrateItUITestsLaunchTests.swift */; };
+		3BB52A0C2C8C4BDA00A21B19 /* WordTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB52A0B2C8C4BDA00A21B19 /* WordTiming.swift */; };
+		3BEB208E2C8C23CE0026E972 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3BEB208D2C8C23CE0026E972 /* Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,6 +37,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		3B28E9892C8C20C3006C3D64 /* ElevenLabsService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ElevenLabsService.swift; sourceTree = "<group>"; };
 		3BACE9CD2C8C1845004518F6 /* NarrateIt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NarrateIt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BACE9D02C8C1845004518F6 /* NarrateItApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NarrateItApp.swift; sourceTree = "<group>"; };
 		3BACE9D22C8C1845004518F6 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -45,6 +49,8 @@
 		3BACE9E82C8C1846004518F6 /* NarrateItUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NarrateItUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BACE9EC2C8C1846004518F6 /* NarrateItUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NarrateItUITests.swift; sourceTree = "<group>"; };
 		3BACE9EE2C8C1846004518F6 /* NarrateItUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NarrateItUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		3BB52A0B2C8C4BDA00A21B19 /* WordTiming.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WordTiming.swift; sourceTree = "<group>"; };
+		3BEB208D2C8C23CE0026E972 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,6 +101,9 @@
 		3BACE9CF2C8C1845004518F6 /* NarrateIt */ = {
 			isa = PBXGroup;
 			children = (
+				3BB52A0B2C8C4BDA00A21B19 /* WordTiming.swift */,
+				3BEB208D2C8C23CE0026E972 /* Info.plist */,
+				3B28E9892C8C20C3006C3D64 /* ElevenLabsService.swift */,
 				3BACE9D02C8C1845004518F6 /* NarrateItApp.swift */,
 				3BACE9D22C8C1845004518F6 /* ContentView.swift */,
 				3BACE9D42C8C1846004518F6 /* Assets.xcassets */,
@@ -235,6 +244,7 @@
 			files = (
 				3BACE9D82C8C1846004518F6 /* Preview Assets.xcassets in Resources */,
 				3BACE9D52C8C1846004518F6 /* Assets.xcassets in Resources */,
+				3BEB208E2C8C23CE0026E972 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,6 +271,8 @@
 			files = (
 				3BACE9D32C8C1845004518F6 /* ContentView.swift in Sources */,
 				3BACE9D12C8C1845004518F6 /* NarrateItApp.swift in Sources */,
+				3B28E98A2C8C20C3006C3D64 /* ElevenLabsService.swift in Sources */,
+				3BB52A0C2C8C4BDA00A21B19 /* WordTiming.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
