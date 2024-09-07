@@ -27,6 +27,7 @@ struct ContentView: View {
     @State private var currentTime: TimeInterval = 0
     @State private var duration: TimeInterval = 0
     @State private var playbackTimer: Timer?
+    @State private var isDragging = false
 
     private let elevenLabsService = ElevenLabsService(apiKey: "sk_43753b82c9194681fbd8ac800a8b1d3e09f4caca8ec3b213")
     private let voiceID = "IKne3meq5aSn9XLyUdCD"  // Updated voice ID
@@ -43,95 +44,108 @@ struct ContentView: View {
         return attributed
     }
 
-    @State private var selectedTab: Tab = .document
-
-    enum Tab: String, CaseIterable, Identifiable {
-        case document, settings
-        var id: Self { self }
-    }
-
     var body: some View {
-        NavigationSplitView {
-            sidebar
-        } detail: {
-            mainContent
+        ZStack {
+            Color(NSColor.windowBackgroundColor).edgesIgnoringSafeArea(.all)
+            
+            VStack(spacing: 20) {
+                HStack {
+                    Text("NarrateIt")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    
+                    Spacer()
+                    
+                    Button(action: { showSettings.toggle() }) {
+                        Image(systemName: "gear")
+                            .font(.title2)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(.horizontal)
+                
+                if let document = selectedDocument {
+                    Text(document.lastPathComponent)
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                }
+
+                ZStack {
+                    if extractedText.isEmpty {
+                        dropOverlay
+                    } else {
+                        TextDisplayView(attributedText: attributedText)
+                    }
+                }
+                .onDrop(of: [.fileURL], isTargeted: $isDragging) { providers -> Bool in
+                    guard let provider = providers.first else { return false }
+                    _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                        if let url = url {
+                            DispatchQueue.main.async {
+                                self.selectedDocument = url
+                                self.extractTextFromDocument()
+                            }
+                        }
+                    }
+                    return true
+                }
+                .onTapGesture {
+                    if extractedText.isEmpty {
+                        selectDocument()
+                    }
+                }
+
+                if !extractedText.isEmpty {
+                    WordCountView(count: extractedText.split(separator: " ").count)
+                    AudioProgressView(currentTime: $currentTime, duration: $duration)
+                }
+
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(0.5)
+                }
+
+                if let errorMessage = errorMessage {
+                    ErrorMessageView(message: errorMessage)
+                }
+
+                Spacer()
+
+                PlaybackControlView(isPlaying: $isPlaying, togglePlayback: togglePlayback, isDisabled: extractedText.isEmpty || isLoading)
+            }
+            .padding()
         }
         .frame(minWidth: 800, minHeight: 600)
-        .navigationTitle("NarrateIt")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button(action: selectDocument) {
-                    Label("Open Document", systemImage: "doc.badge.plus")
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button(action: togglePlayback) {
-                    Label(isPlaying ? "Pause" : "Play", systemImage: isPlaying ? "pause.fill" : "play.fill")
-                }
-                .disabled(extractedText.isEmpty || isLoading)
-            }
-        }
-    }
-
-    var sidebar: some View {
-        List(selection: $selectedTab) {
-            ForEach(Tab.allCases) { tab in
-                NavigationLink(value: tab) {
-                    Label(tab.rawValue.capitalized, systemImage: tab == .document ? "doc.text" : "gear")
-                }
-            }
-        }
-        .listStyle(SidebarListStyle())
-        .frame(minWidth: 200, idealWidth: 250, maxWidth: 300)
-    }
-
-    var mainContent: some View {
-        Group {
-            switch selectedTab {
-            case .document:
-                documentView
-            case .settings:
-                SettingsView()
-            }
-        }
-        .navigationDestination(for: Tab.self) { tab in
-            switch tab {
-            case .document:
-                documentView
-            case .settings:
-                SettingsView()
-            }
-        }
-    }
-
-    var documentView: some View {
-        VStack(spacing: 20) {
-            if let document = selectedDocument {
-                Text(document.lastPathComponent)
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-            }
-
-            TextDisplayView(attributedText: attributedText)
-
-            WordCountView(count: extractedText.split(separator: " ").count)
-
-            AudioProgressView(currentTime: $currentTime, duration: $duration)
-
-            if isLoading {
-                ProgressView()
-                    .scaleEffect(0.5)
-            }
-
-            if let errorMessage = errorMessage {
-                ErrorMessageView(message: errorMessage)
-            }
-        }
-        .padding()
-        .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             NSApp.windows.first?.makeKeyAndOrderFront(nil)
         }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+        }
+    }
+
+    var dropOverlay: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.blue.opacity(0.1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.blue, lineWidth: isDragging ? 4 : 2)
+                        .animation(.easeInOut, value: isDragging)
+                )
+
+            VStack {
+                Image(systemName: "arrow.down.doc.fill")
+                    .font(.system(size: 40))
+                Text("Drop PDF or Image here")
+                    .font(.headline)
+                Text("or click to open")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            .foregroundColor(.blue)
+        }
+        .frame(height: 300)
     }
 
     func selectDocument() {
@@ -233,7 +247,7 @@ struct ContentView: View {
     }
     
     func startPlaybackTimer() {
-        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
             updatePlaybackProgress()
         }
     }
@@ -387,6 +401,32 @@ struct SettingsView: View {
         Text("Settings")
             .font(.title)
         Text("Add your settings options here")
+    }
+}
+
+struct PlaybackControlView: View {
+    @Binding var isPlaying: Bool
+    let togglePlayback: () -> Void
+    let isDisabled: Bool
+    
+    var body: some View {
+        Button(action: togglePlayback) {
+            ZStack {
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 60, height: 60)
+                    .shadow(color: .gray.opacity(0.3), radius: 3, x: 0, y: 2)
+                
+                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 30))
+                    .foregroundColor(.white)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.5 : 1.0)
+        .animation(.easeInOut, value: isPlaying)
+        .help(isPlaying ? "Pause" : "Play")
     }
 }
 
