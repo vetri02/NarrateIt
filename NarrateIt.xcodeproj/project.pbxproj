@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		3B28E98A2C8C20C3006C3D64 /* ElevenLabsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B28E9892C8C20C3006C3D64 /* ElevenLabsService.swift */; };
 		3B3DE9252C8F6EA5002399CD /* Environment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B3DE9242C8F6EA5002399CD /* Environment.swift */; };
+		3B3DE9282C8F74BC002399CD /* VoiceCloneViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B3DE9262C8F74BC002399CD /* VoiceCloneViewController.swift */; };
+		3B3DE9292C8F74BC002399CD /* VoiceCloneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B3DE9272C8F74BC002399CD /* VoiceCloneView.swift */; };
 		3BACE9D12C8C1845004518F6 /* NarrateItApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BACE9D02C8C1845004518F6 /* NarrateItApp.swift */; };
 		3BACE9D32C8C1845004518F6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BACE9D22C8C1845004518F6 /* ContentView.swift */; };
 		3BACE9D52C8C1846004518F6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3BACE9D42C8C1846004518F6 /* Assets.xcassets */; };
@@ -40,6 +42,8 @@
 /* Begin PBXFileReference section */
 		3B28E9892C8C20C3006C3D64 /* ElevenLabsService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ElevenLabsService.swift; sourceTree = "<group>"; };
 		3B3DE9242C8F6EA5002399CD /* Environment.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Environment.swift; sourceTree = "<group>"; };
+		3B3DE9262C8F74BC002399CD /* VoiceCloneViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VoiceCloneViewController.swift; sourceTree = "<group>"; };
+		3B3DE9272C8F74BC002399CD /* VoiceCloneView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VoiceCloneView.swift; sourceTree = "<group>"; };
 		3BACE9CD2C8C1845004518F6 /* NarrateIt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NarrateIt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BACE9D02C8C1845004518F6 /* NarrateItApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NarrateItApp.swift; sourceTree = "<group>"; };
 		3BACE9D22C8C1845004518F6 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -103,6 +107,8 @@
 		3BACE9CF2C8C1845004518F6 /* NarrateIt */ = {
 			isa = PBXGroup;
 			children = (
+				3B3DE9272C8F74BC002399CD /* VoiceCloneView.swift */,
+				3B3DE9262C8F74BC002399CD /* VoiceCloneViewController.swift */,
 				3B3DE9242C8F6EA5002399CD /* Environment.swift */,
 				3BB52A0B2C8C4BDA00A21B19 /* WordTiming.swift */,
 				3BEB208D2C8C23CE0026E972 /* Info.plist */,
@@ -275,8 +281,10 @@
 				3BACE9D32C8C1845004518F6 /* ContentView.swift in Sources */,
 				3BACE9D12C8C1845004518F6 /* NarrateItApp.swift in Sources */,
 				3B28E98A2C8C20C3006C3D64 /* ElevenLabsService.swift in Sources */,
+				3B3DE9292C8F74BC002399CD /* VoiceCloneView.swift in Sources */,
 				3BB52A0C2C8C4BDA00A21B19 /* WordTiming.swift in Sources */,
 				3B3DE9252C8F6EA5002399CD /* Environment.swift in Sources */,
+				3B3DE9282C8F74BC002399CD /* VoiceCloneViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

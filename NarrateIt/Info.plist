@@ -7,5 +7,7 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+<string>We need access to your microphone to record your voice for cloning.</string>
 </dict>
 </plist>

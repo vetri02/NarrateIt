@@ -13,12 +13,18 @@ import AVFoundation
 import os
 import AppKit
 
-// Add this line if Environment is in a separate module
-// import YourModuleName
-
 enum AppTheme: String, CaseIterable, Identifiable {
     case system, light, dark
     var id: Self { self }
+}
+
+enum ActiveSheet: Identifiable {
+    case settings
+    case voiceClone
+    
+    var id: Int {
+        hashValue
+    }
 }
 
 struct ContentView: View {
@@ -39,14 +45,16 @@ struct ContentView: View {
     @AppStorage("appTheme") private var appTheme: AppTheme = .system
     @AppStorage("fontSize") private var fontSize: Double = 16
     @AppStorage("lineSpacing") private var lineSpacing: Double = 4
+    @State private var activeSheet: ActiveSheet?
+    @State private var isSynthesizing = false
 
-    private let elevenLabsService: ElevenLabsService
-    private let voiceID = "IKne3meq5aSn9XLyUdCD"  // Updated voice ID
+    @StateObject private var elevenlabsService: ElevenLabsService
     
     private let logger = Logger(subsystem: "com.yourcompany.NarrateIt", category: "ContentView")
 
     init() {
-        self.elevenLabsService = ElevenLabsService(apiKey: Environment.elevenLabsAPIKey)
+        let apiKey = Environment.elevenLabsAPIKey
+        _elevenlabsService = StateObject(wrappedValue: ElevenLabsService(apiKey: apiKey))
     }
 
     private var attributedText: AttributedString {
@@ -71,7 +79,7 @@ struct ContentView: View {
                     
                     Spacer()
                     
-                    Button(action: { showSettings.toggle() }) {
+                    Button(action: { activeSheet = .settings }) {
                         Image(systemName: "gear")
                             .font(.title2)
                     }
@@ -134,8 +142,13 @@ struct ContentView: View {
         .onAppear {
             NSApp.windows.first?.makeKeyAndOrderFront(nil)
         }
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
+        .sheet(item: $activeSheet) { item in
+            switch item {
+            case .settings:
+                SettingsView(appTheme: $appTheme, fontSize: $fontSize, lineSpacing: $lineSpacing, elevenlabsService: elevenlabsService, showVoiceCloneView: { activeSheet = .voiceClone })
+            case .voiceClone:
+                VoiceCloneView(elevenlabsService: elevenlabsService, isPresented: Binding(get: { activeSheet == .voiceClone }, set: { if !$0 { activeSheet = nil } }))
+            }
         }
     }
 
@@ -268,12 +281,24 @@ struct ContentView: View {
     }
     
     func synthesizeSpeech() {
+        guard !isSynthesizing else {
+            logger.info("Speech synthesis already in progress. Ignoring new request.")
+            return
+        }
+        
+        isSynthesizing = true
         isLoading = true
         errorMessage = nil
         logger.info("Starting speech synthesis")
-        elevenLabsService.synthesizeSpeech(text: extractedText, voiceID: voiceID) { result in
+        
+        // Cancel any ongoing synthesis
+        elevenlabsService.cancelOngoingSynthesis()
+        
+        elevenlabsService.synthesizeSpeech(text: extractedText, voiceID: elevenlabsService.defaultVoiceID) { result in
             DispatchQueue.main.async {
                 self.isLoading = false
+                self.isSynthesizing = false
+                
                 switch result {
                 case .success(let audioData):
                     do {
@@ -383,10 +408,70 @@ struct ErrorMessageView: View {
 }
 
 struct SettingsView: View {
+    @Binding var appTheme: AppTheme
+    @Binding var fontSize: Double
+    @Binding var lineSpacing: Double
+    @State private var selectedVoiceID: String
+    @ObservedObject var elevenlabsService: ElevenLabsService
+    var showVoiceCloneView: () -> Void
+    
+    init(appTheme: Binding<AppTheme>, fontSize: Binding<Double>, lineSpacing: Binding<Double>, elevenlabsService: ElevenLabsService, showVoiceCloneView: @escaping () -> Void) {
+        self._appTheme = appTheme
+        self._fontSize = fontSize
+        self._lineSpacing = lineSpacing
+        self.elevenlabsService = elevenlabsService
+        self._selectedVoiceID = State(initialValue: elevenlabsService.defaultVoiceID)
+        self.showVoiceCloneView = showVoiceCloneView
+    }
+    
     var body: some View {
-        Text("Settings")
-            .font(.title)
-        Text("Add your settings options here")
+        Form {
+            Section(header: Text("Appearance")) {
+                Picker("Theme", selection: $appTheme) {
+                    Text("System").tag(AppTheme.system)
+                    Text("Light").tag(AppTheme.light)
+                    Text("Dark").tag(AppTheme.dark)
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                
+                Slider(value: $fontSize, in: 12...24, step: 1) {
+                    Text("Font Size: \(Int(fontSize))")
+                }
+                
+                Slider(value: $lineSpacing, in: 1...10, step: 1) {
+                    Text("Line Spacing: \(Int(lineSpacing))")
+                }
+            }
+            
+            Section(header: Text("Voice Settings")) {
+                Picker("Default Voice", selection: $selectedVoiceID) {
+                    Text("Default Voice").tag("IKne3meq5aSn9XLyUdCD")
+                    ForEach(elevenlabsService.clonedVoices, id: \.id) { voice in
+                        Text(voice.name).tag(voice.id)
+                    }
+                }
+                .onChange(of: selectedVoiceID) { _, newValue in
+                    elevenlabsService.setDefaultVoice(id: newValue)
+                }
+                
+                Button("Clone New Voice") {
+                    showVoiceCloneView()
+                }
+                
+                ForEach(elevenlabsService.clonedVoices, id: \.id) { voice in
+                    HStack {
+                        Text(voice.name)
+                        Spacer()
+                        Button("Delete") {
+                            elevenlabsService.deleteClonedVoice(id: voice.id)
+                        }
+                        .foregroundColor(.red)
+                    }
+                }
+            }
+        }
+        .padding()
+        .frame(width: 300, height: 400)
     }
 }
 
