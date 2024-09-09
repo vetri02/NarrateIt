@@ -13,6 +13,14 @@ import AVFoundation
 import os
 import AppKit
 
+// Add this line if Environment is in a separate module
+// import YourModuleName
+
+enum AppTheme: String, CaseIterable, Identifiable {
+    case system, light, dark
+    var id: Self { self }
+}
+
 struct ContentView: View {
     @State private var selectedDocument: URL?
     @State private var extractedText: String = ""
@@ -28,11 +36,18 @@ struct ContentView: View {
     @State private var duration: TimeInterval = 0
     @State private var playbackTimer: Timer?
     @State private var isDragging = false
+    @AppStorage("appTheme") private var appTheme: AppTheme = .system
+    @AppStorage("fontSize") private var fontSize: Double = 16
+    @AppStorage("lineSpacing") private var lineSpacing: Double = 4
 
-    private let elevenLabsService = ElevenLabsService(apiKey: "sk_43753b82c9194681fbd8ac800a8b1d3e09f4caca8ec3b213")
+    private let elevenLabsService: ElevenLabsService
     private let voiceID = "IKne3meq5aSn9XLyUdCD"  // Updated voice ID
     
     private let logger = Logger(subsystem: "com.yourcompany.NarrateIt", category: "ContentView")
+
+    init() {
+        self.elevenLabsService = ElevenLabsService(apiKey: Environment.elevenLabsAPIKey)
+    }
 
     private var attributedText: AttributedString {
         var attributed = AttributedString(extractedText)
@@ -260,21 +275,14 @@ struct ContentView: View {
             DispatchQueue.main.async {
                 self.isLoading = false
                 switch result {
-                case .success(let (audioData, timings)):
+                case .success(let audioData):
                     do {
                         self.audioPlayer = try AVAudioPlayer(data: audioData)
                         self.audioPlayer?.prepareToPlay()
-                        self.wordTimings = timings
-                        self.currentWordIndex = 0
                         self.audioPlayer?.play()
                         self.isPlaying = true
                         self.startPlaybackTimer()
                         self.logger.info("Speech synthesis successful, playing audio")
-                        if !timings.isEmpty {
-                            self.startWordHighlighting()
-                        } else {
-                            self.logger.info("No word timings available, skipping highlighting")
-                        }
                     } catch {
                         self.logger.error("Failed to create audio player: \(error.localizedDescription)")
                         self.errorMessage = "Failed to play synthesized speech: \(error.localizedDescription)"
@@ -282,28 +290,6 @@ struct ContentView: View {
                 case .failure(let error):
                     self.logger.error("Speech synthesis failed: \(error.localizedDescription)")
                     self.errorMessage = "Failed to synthesize speech: \(error.localizedDescription)"
-                }
-            }
-        }
-    }
-    
-    func startWordHighlighting() {
-        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-            guard let player = self.audioPlayer, player.isPlaying else {
-                timer.invalidate()
-                self.highlightedRange = nil
-                return
-            }
-            
-            let currentTime = player.currentTime
-            if self.currentWordIndex < self.wordTimings.count {
-                let timing = self.wordTimings[self.currentWordIndex]
-                if currentTime >= timing.start && currentTime < timing.end {
-                    let startIndex = self.extractedText.index(self.extractedText.startIndex, offsetBy: timing.startIndex)
-                    let endIndex = self.extractedText.index(self.extractedText.startIndex, offsetBy: timing.endIndex)
-                    self.highlightedRange = startIndex..<endIndex
-                } else if currentTime >= timing.end {
-                    self.currentWordIndex += 1
                 }
             }
         }
