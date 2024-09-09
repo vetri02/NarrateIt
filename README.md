@@ -1,11 +1,12 @@
 # NarrateIt
 
-NarrateIt is a macOS application that allows users to extract text from PDF documents and images, and then synthesize speech from the extracted text using ElevenLabs' text-to-speech API.
+NarrateIt is a macOS application that allows users to extract text from PDF documents and images, and then synthesize speech from the extracted text using ElevenLabs' text-to-speech API. It also features voice cloning capabilities for personalized text-to-speech experiences.
 
 ## Features
 
 - Extract text from PDF documents and images
 - Synthesize speech from extracted text using ElevenLabs API
+- Voice cloning for personalized text-to-speech
 - Customizable voice settings
 - Word count display
 - Audio playback controls
@@ -46,6 +47,18 @@ NarrateIt is a macOS application that allows users to extract text from PDF docu
 4. Click the play button to synthesize speech from the extracted text.
 5. Use the playback controls to pause, resume, or stop the audio playback.
 
+## Voice Cloning
+
+NarrateIt supports voice cloning, allowing you to create personalized text-to-speech voices:
+
+1. Go to Settings by clicking the gear icon in the top-right corner.
+2. In the Voice Settings section, click "Clone New Voice".
+3. Enter a name for your cloned voice.
+4. Read the provided text snippet when prompted to record your voice.
+5. Click "Clone Voice" to send the recording to ElevenLabs for processing.
+6. Once cloned, your new voice will appear in the list of available voices.
+7. Select your cloned voice as the default voice for text-to-speech synthesis.
+
 ## Configuration
 
 You can customize the following settings in the application:
@@ -53,6 +66,7 @@ You can customize the following settings in the application:
 - Font size
 - Line spacing
 - App theme (light/dark/system)
+- Default voice for text-to-speech
 
 Access these settings by clicking the gear icon in the top-right corner of the application window.
 
@@ -66,7 +80,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- [ElevenLabs](https://elevenlabs.io/) for providing the text-to-speech API
+- [ElevenLabs](https://elevenlabs.io/) for providing the text-to-speech and voice cloning API
 - [SwiftUI](https://developer.apple.com/xcode/swiftui/) for the user interface framework
 - [Vision](https://developer.apple.com/documentation/vision) for OCR capabilities
 
