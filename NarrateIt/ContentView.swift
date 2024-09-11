@@ -13,6 +13,14 @@ import AVFoundation
 import os
 import AppKit
 
+class ThemeManager: ObservableObject {
+    @AppStorage("appTheme") var appTheme: AppTheme = .system {
+        didSet {
+            objectWillChange.send()
+        }
+    }
+}
+
 enum AppTheme: String, CaseIterable, Identifiable {
     case system, light, dark
     var id: Self { self }
@@ -28,6 +36,7 @@ enum ActiveSheet: Identifiable {
 }
 
 struct ContentView: View {
+    @StateObject private var themeManager = ThemeManager()
     @State private var selectedDocument: URL?
     @State private var extractedText: String = ""
     @State private var isPlaying: Bool = false
@@ -42,9 +51,6 @@ struct ContentView: View {
     @State private var duration: TimeInterval = 0
     @State private var playbackTimer: Timer?
     @State private var isDragging = false
-    @AppStorage("appTheme") private var appTheme: AppTheme = .system
-    @AppStorage("fontSize") private var fontSize: Double = 16
-    @AppStorage("lineSpacing") private var lineSpacing: Double = 4
     @State private var activeSheet: ActiveSheet?
     @State private var isSynthesizing = false
 
@@ -69,19 +75,21 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color(NSColor.windowBackgroundColor).edgesIgnoringSafeArea(.all)
+            themeBackgroundColor.edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 20) {
                 HStack {
                     Text("NarrateIt")
                         .font(.largeTitle)
                         .fontWeight(.bold)
+                        .foregroundColor(.primary)
                     
                     Spacer()
                     
                     Button(action: { activeSheet = .settings }) {
                         Image(systemName: "gear")
                             .font(.title2)
+                            .foregroundColor(.blue)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -120,12 +128,17 @@ struct ContentView: View {
 
                 if !extractedText.isEmpty {
                     WordCountView(count: extractedText.split(separator: " ").count)
-                    AudioProgressView(currentTime: $currentTime, duration: $duration)
                 }
 
                 if isLoading {
                     ProgressView()
                         .scaleEffect(0.5)
+                } else if !extractedText.isEmpty {
+                    PlaybackControlView(isPlaying: $isPlaying, 
+                                        togglePlayback: togglePlayback, 
+                                        isDisabled: extractedText.isEmpty || isLoading,
+                                        currentTime: $currentTime,
+                                        duration: $duration)
                 }
 
                 if let errorMessage = errorMessage {
@@ -133,8 +146,6 @@ struct ContentView: View {
                 }
 
                 Spacer()
-
-                PlaybackControlView(isPlaying: $isPlaying, togglePlayback: togglePlayback, isDisabled: extractedText.isEmpty || isLoading)
             }
             .padding()
         }
@@ -145,33 +156,60 @@ struct ContentView: View {
         .sheet(item: $activeSheet) { item in
             switch item {
             case .settings:
-                SettingsView(appTheme: $appTheme, fontSize: $fontSize, lineSpacing: $lineSpacing, elevenlabsService: elevenlabsService, showVoiceCloneView: { activeSheet = .voiceClone })
+                SettingsView(themeManager: themeManager, 
+                             elevenlabsService: elevenlabsService, 
+                             showVoiceCloneView: { activeSheet = .voiceClone }, 
+                             isPresented: Binding(get: { activeSheet == .settings }, set: { if !$0 { activeSheet = nil } }))
             case .voiceClone:
-                VoiceCloneView(elevenlabsService: elevenlabsService, isPresented: Binding(get: { activeSheet == .voiceClone }, set: { if !$0 { activeSheet = nil } }))
+                VoiceCloneView(elevenlabsService: elevenlabsService, 
+                               isPresented: Binding(get: { activeSheet == .voiceClone }, set: { if !$0 { activeSheet = nil } }))
             }
+        }
+        .preferredColorScheme(colorScheme)
+    }
+
+    private var themeBackgroundColor: Color {
+        switch themeManager.appTheme {
+        case .system:
+            return Color(.windowBackgroundColor)
+        case .light:
+            return Color.white
+        case .dark:
+            return Color.black
+        }
+    }
+
+    private var colorScheme: ColorScheme? {
+        switch themeManager.appTheme {
+        case .system:
+            return nil
+        case .light:
+            return .light
+        case .dark:
+            return .dark
         }
     }
 
     var dropOverlay: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color.blue.opacity(0.1))
+                .fill(Color.gray.opacity(0.1))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.blue, lineWidth: isDragging ? 4 : 2)
+                        .stroke(Color.blue, lineWidth: isDragging ? 2 : 1)
                         .animation(.easeInOut, value: isDragging)
                 )
 
             VStack {
                 Image(systemName: "arrow.down.doc.fill")
                     .font(.system(size: 40))
+                    .foregroundColor(.blue)
                 Text("Drop PDF or Image here")
                     .font(.headline)
                 Text("or click to open")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            .foregroundColor(.blue)
         }
         .frame(height: 300)
     }
@@ -348,12 +386,14 @@ struct TextDisplayView: View {
     var body: some View {
         ScrollView {
             Text(attributedText)
+                .font(.system(size: 16))
+                .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
                 .background(Color(NSColor.textBackgroundColor))
                 .cornerRadius(8)
         }
-        .frame(height: 300)
+        .frame(maxHeight: .infinity)
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(10)
         .shadow(radius: 2)
@@ -367,6 +407,180 @@ struct WordCountView: View {
         Text("Word count: \(count)")
             .font(.caption)
             .foregroundColor(.secondary)
+    }
+}
+
+struct ErrorMessageView: View {
+    let message: String
+
+    var body: some View {
+        Text(message)
+            .foregroundColor(.red)
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+    }
+}
+
+struct SettingsView: View {
+    @ObservedObject var themeManager: ThemeManager
+    @State private var localAppTheme: AppTheme
+    @ObservedObject var elevenlabsService: ElevenLabsService
+    var showVoiceCloneView: () -> Void
+    @Binding var isPresented: Bool
+    
+    @State private var selectedVoiceID: String
+    
+    init(themeManager: ThemeManager, elevenlabsService: ElevenLabsService, showVoiceCloneView: @escaping () -> Void, isPresented: Binding<Bool>) {
+        self.themeManager = themeManager
+        self.elevenlabsService = elevenlabsService
+        self._selectedVoiceID = State(initialValue: elevenlabsService.defaultVoiceID)
+        self.showVoiceCloneView = showVoiceCloneView
+        self._isPresented = isPresented
+        self._localAppTheme = State(initialValue: themeManager.appTheme)
+    }
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Settings")
+                .font(.title)
+                .fontWeight(.bold)
+            
+            GroupBox(label: Text("Appearance").font(.headline)) {
+                Picker("Theme", selection: $localAppTheme) {
+                    Text("System").tag(AppTheme.system)
+                    Text("Light").tag(AppTheme.light)
+                    Text("Dark").tag(AppTheme.dark)
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding(.vertical, 8)
+            }
+            
+            GroupBox(label: Text("Voice Settings").font(.headline)) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Picker("Default Voice", selection: $selectedVoiceID) {
+                        Text("Default Voice").tag("IKne3meq5aSn9XLyUdCD")
+                        ForEach(elevenlabsService.clonedVoices, id: \.id) { voice in
+                            Text(voice.name).tag(voice.id)
+                        }
+                    }
+                    .pickerStyle(DefaultPickerStyle())
+                    .id(elevenlabsService.clonedVoices.count) // Force refresh when voices change
+                }
+                .padding(.vertical, 8)
+            }
+            
+            Button(action: {
+                isPresented = false
+                showVoiceCloneView()
+            }) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Clone New Voice")
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            GroupBox(label: Text("Available Voices").font(.headline)) {
+                if elevenlabsService.clonedVoices.isEmpty {
+                    Text("No cloned voices available")
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 8)
+                } else {
+                    List {
+                        ForEach(elevenlabsService.clonedVoices, id: \.id) { voice in
+                            HStack {
+                                Text(voice.name)
+                                Spacer()
+                                if voice.id == selectedVoiceID {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                        .onDelete(perform: deleteVoice)
+                    }
+                    .frame(height: 100)
+                }
+            }
+            
+            Spacer()
+            
+            HStack {
+                Button("Cancel") {
+                    isPresented = false
+                }
+                .keyboardShortcut(.cancelAction)
+                
+                Spacer()
+                
+                Button("Save") {
+                    applySettings()
+                    isPresented = false
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding(.top)
+        }
+        .padding()
+        .frame(width: 400, height: 550)
+        .onAppear {
+            // Ensure selectedVoiceID is valid
+            if !elevenlabsService.clonedVoices.contains(where: { $0.id == selectedVoiceID }) {
+                selectedVoiceID = "IKne3meq5aSn9XLyUdCD" // Default to original voice if selected voice is not found
+            }
+        }
+    }
+    
+    private func applySettings() {
+        themeManager.appTheme = localAppTheme
+        elevenlabsService.setDefaultVoice(id: selectedVoiceID)
+    }
+    
+    private func deleteVoice(at offsets: IndexSet) {
+        for index in offsets {
+            let voice = elevenlabsService.clonedVoices[index]
+            elevenlabsService.deleteClonedVoice(id: voice.id)
+        }
+    }
+}
+
+struct PlaybackControlView: View {
+    @Binding var isPlaying: Bool
+    let togglePlayback: () -> Void
+    let isDisabled: Bool
+    @Binding var currentTime: TimeInterval
+    @Binding var duration: TimeInterval
+    
+    var body: some View {
+        VStack(spacing: 10) {
+            Button(action: togglePlayback) {
+                ZStack {
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: 60, height: 60)
+                        .shadow(color: .gray.opacity(0.3), radius: 3, x: 0, y: 2)
+                    
+                    Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.white)
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(isDisabled)
+            .opacity(isDisabled ? 0.5 : 1.0)
+            .animation(.easeInOut, value: isPlaying)
+            .help(isPlaying ? "Pause" : "Play")
+            
+            if isPlaying || currentTime > 0 {
+                AudioProgressView(currentTime: $currentTime, duration: $duration)
+            }
+        }
     }
 }
 
@@ -392,112 +606,6 @@ struct AudioProgressView: View {
         let minutes = Int(timeInterval / 60)
         let seconds = Int(timeInterval.truncatingRemainder(dividingBy: 60))
         return String(format: "%02d:%02d", minutes, seconds)
-    }
-}
-
-struct ErrorMessageView: View {
-    let message: String
-
-    var body: some View {
-        Text(message)
-            .foregroundColor(.red)
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-    }
-}
-
-struct SettingsView: View {
-    @Binding var appTheme: AppTheme
-    @Binding var fontSize: Double
-    @Binding var lineSpacing: Double
-    @State private var selectedVoiceID: String
-    @ObservedObject var elevenlabsService: ElevenLabsService
-    var showVoiceCloneView: () -> Void
-    
-    init(appTheme: Binding<AppTheme>, fontSize: Binding<Double>, lineSpacing: Binding<Double>, elevenlabsService: ElevenLabsService, showVoiceCloneView: @escaping () -> Void) {
-        self._appTheme = appTheme
-        self._fontSize = fontSize
-        self._lineSpacing = lineSpacing
-        self.elevenlabsService = elevenlabsService
-        self._selectedVoiceID = State(initialValue: elevenlabsService.defaultVoiceID)
-        self.showVoiceCloneView = showVoiceCloneView
-    }
-    
-    var body: some View {
-        Form {
-            Section(header: Text("Appearance")) {
-                Picker("Theme", selection: $appTheme) {
-                    Text("System").tag(AppTheme.system)
-                    Text("Light").tag(AppTheme.light)
-                    Text("Dark").tag(AppTheme.dark)
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                
-                Slider(value: $fontSize, in: 12...24, step: 1) {
-                    Text("Font Size: \(Int(fontSize))")
-                }
-                
-                Slider(value: $lineSpacing, in: 1...10, step: 1) {
-                    Text("Line Spacing: \(Int(lineSpacing))")
-                }
-            }
-            
-            Section(header: Text("Voice Settings")) {
-                Picker("Default Voice", selection: $selectedVoiceID) {
-                    Text("Default Voice").tag("IKne3meq5aSn9XLyUdCD")
-                    ForEach(elevenlabsService.clonedVoices, id: \.id) { voice in
-                        Text(voice.name).tag(voice.id)
-                    }
-                }
-                .onChange(of: selectedVoiceID) { _, newValue in
-                    elevenlabsService.setDefaultVoice(id: newValue)
-                }
-                
-                Button("Clone New Voice") {
-                    showVoiceCloneView()
-                }
-                
-                ForEach(elevenlabsService.clonedVoices, id: \.id) { voice in
-                    HStack {
-                        Text(voice.name)
-                        Spacer()
-                        Button("Delete") {
-                            elevenlabsService.deleteClonedVoice(id: voice.id)
-                        }
-                        .foregroundColor(.red)
-                    }
-                }
-            }
-        }
-        .padding()
-        .frame(width: 300, height: 400)
-    }
-}
-
-struct PlaybackControlView: View {
-    @Binding var isPlaying: Bool
-    let togglePlayback: () -> Void
-    let isDisabled: Bool
-    
-    var body: some View {
-        Button(action: togglePlayback) {
-            ZStack {
-                Circle()
-                    .fill(Color.blue)
-                    .frame(width: 60, height: 60)
-                    .shadow(color: .gray.opacity(0.3), radius: 3, x: 0, y: 2)
-                
-                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 30))
-                    .foregroundColor(.white)
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-        .disabled(isDisabled)
-        .opacity(isDisabled ? 0.5 : 1.0)
-        .animation(.easeInOut, value: isPlaying)
-        .help(isPlaying ? "Pause" : "Play")
     }
 }
 

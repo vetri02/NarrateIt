@@ -150,7 +150,7 @@ public class ElevenLabsService: ObservableObject {
             self.clonedVoices.removeAll { $0.id == id }
             self.saveClonedVoices()
             if self.defaultVoiceID == id {
-                self.setDefaultVoice(id: "IKne3meq5aSn9XLyUdCD")
+                self.setDefaultVoice(id: "IKne3meq5aSn9XLyUdCD") // Default to the original voice
             }
         }
     }
@@ -247,5 +247,44 @@ public class ElevenLabsService: ObservableObject {
         synthesisTask?.cancel()
         synthesisTask = nil
         isSynthesizing = false
+    }
+    
+    public func deleteVoiceFromElevenLabs(id: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        let endpoint = "\(baseURL)/voices/\(id)"
+        guard let url = URL(string: endpoint) else {
+            logger.error("Invalid URL: \(endpoint)")
+            completion(.failure(NSError(domain: "ElevenLabsService", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.addValue(apiKey, forHTTPHeaderField: "xi-api-key")
+        
+        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                self.logger.error("Network error: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                self.logger.error("Invalid response: not an HTTP response")
+                completion(.failure(NSError(domain: "ElevenLabsService", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])))
+                return
+            }
+            
+            if (200...299).contains(httpResponse.statusCode) {
+                self.logger.info("Successfully deleted voice from ElevenLabs")
+                completion(.success(()))
+            } else {
+                self.logger.error("HTTP error: status code \(httpResponse.statusCode)")
+                completion(.failure(NSError(domain: "ElevenLabsService", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP status code: \(httpResponse.statusCode)"])))
+            }
+        }
+        
+        task.resume()
     }
 }
