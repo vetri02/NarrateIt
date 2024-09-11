@@ -53,6 +53,7 @@ struct ContentView: View {
     @State private var isDragging = false
     @State private var activeSheet: ActiveSheet?
     @State private var isSynthesizing = false
+    @State private var showingDocumentView = false
 
     @StateObject private var elevenlabsService: ElevenLabsService
     
@@ -79,6 +80,19 @@ struct ContentView: View {
             
             VStack(spacing: 20) {
                 HStack {
+                    if !extractedText.isEmpty {
+                        Button(action: clearText) {
+                            HStack {
+                                Image(systemName: "chevron.left")
+                                Text("Back")
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .foregroundColor(.blue)
+                    }
+                    
+                    Spacer()
+                    
                     Text("NarrateIt")
                         .font(.largeTitle)
                         .fontWeight(.bold)
