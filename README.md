@@ -2,9 +2,12 @@
 
 NarrateIt is a macOS application that allows users to extract text from PDF documents and images, and then synthesize speech from the extracted text using ElevenLabs' text-to-speech API. It also features voice cloning capabilities for personalized text-to-speech experiences.
 
-## Highlight: Fully AI-Developed Application
+- **Read in Your Own Voice**: With NarrateIt's voice cloning feature, users can create a digital version of their own voice and use it to read any document, providing a truly personalized text-to-speech experience.
 
-**This application was developed entirely using AI assistance, specifically [Claude-3.5 Sonnet](https://claude.ai) (an AI language model) and [Cursor](https://cursor.sh) (an AI-powered code editor), without any manual code writing. It serves as a demonstration of the potential of AI-assisted software development.**
+## Highlights
+
+- **AI-Developed Application**: This application was developed entirely using AI assistance, specifically [Claude-3.5 Sonnet](https://claude.ai) (an AI language model) and [Cursor](https://cursor.sh) (an AI-powered code editor), without any manual code writing.
+
 
 ## Features
 
